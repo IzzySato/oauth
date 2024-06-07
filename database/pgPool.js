@@ -1,22 +1,48 @@
-const Pool = require('pg').Pool;
+'use strict';
 
-const setResponse = (error, results = null) => {
-  return {
-    error: error,
-    results,
-  };
+const Pool = require('pg').Pool;
+const {
+  DB_USER = 'postgres',
+  DB_HOST = 'localhost',
+  DB_NAME = 'oauth2',
+  DB_PASSWORD = 'postgres',
+  DB_PORT = 5432,
+  DB_SCHEMA = 'public',
+} = process.env;
+
+const setResponse = (error, results) => {
+  if (error) {
+    return { success: false, message: error.message };
+  }
+  return { success: true, rows: results.rows };
 };
 
 const query = (queryString, cbFunc) => {
   const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_DATABASE,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
+    user: DB_USER,
+    host: DB_HOST,
+    database: DB_NAME,
+    password: DB_PASSWORD,
+    port: DB_PORT,
   });
-  pool.query(queryString, (error, results) => {
-    cbFunc(setResponse(error, results));
+
+  pool.query(`SET search_path TO ${DB_SCHEMA};`, (error) => {
+    if (error) {
+      console.error('Error setting search path:', error);
+      cbFunc(setResponse(error, null));
+      pool.end();
+      return;
+    }
+
+    pool.query(queryString, (error, results) => {
+      if (error) {
+        console.error('Error executing query:', error);
+      } else {
+        console.log('Query results:', results.rows);
+      }
+      cbFunc(setResponse(error, results));
+      pool.end();
+    });
   });
 
   pool.on('connect', () => {
@@ -25,19 +51,10 @@ const query = (queryString, cbFunc) => {
 
   pool.on('error', (err) => {
     console.log('Unexpected error on idle client', err);
-    // process.exit(-1);
+    process.exit(-1);
   });
 };
 
-const checkTableExists = (cbFunc, tableName) => {
-  const checkQuery = {
-    text: "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1",
-    values: [tableName],
-  };
-  query(checkQuery, cbFunc);
-};
-
 module.exports = {
-  query,
-  checkTableExists,
+  query
 };

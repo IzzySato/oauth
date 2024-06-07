@@ -19,7 +19,8 @@
     "morgan": "^1.10.0",
     "node-oauth2-server": "^2.4.0",
     "nodemon": "^3.1.3",
-    "pg": "^8.11.5"
+    "pg": "^8.11.5",
+    "winston": "^3.13.0"
   },
   "devDependencies": {
     "jest": "^29.7.0"

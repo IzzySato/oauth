@@ -20,6 +20,9 @@ const PORT = process.env.PORT || 3001;
 
 const app = express();
 
+// create database/table if doesn't exist
+require('./database/init');
+
 app.oauth = oAuth2Server({
   model: oAuthService,
   grants: ['password'],
@@ -60,14 +63,6 @@ app.use('/auth', routes);
 app.use((req, res, next) => {
   next(createError(404));
 });
-
-pgPool.checkTableExists((response) => {
-  if (response.results && response.results.rows.length > 0) {
-    console.log('Table "public.users" exists.');
-  } else {
-    console.log('Table "public.users" does not exist.');
-  }
-}, 'users');
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
